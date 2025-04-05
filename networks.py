@@ -15,19 +15,21 @@ class Project(NamedTuple):
     authors_abr: frozenset[str]
     year: int
 
-def load_feather(fname='Data/ACM/AcmEPFL_paired.feather'):
-    ds: pd.DataFrame = pd.read_feather(fname)
-    ds = ds[ds["is_jury"]==True].reset_index(drop=True)
-    ds["Auteurs"] = ds["Auteurs"].str.split(";")
-    ds["Auteurs_cleaned"] = ds["Auteurs"].apply(lambda x: [s.removesuffix(" +").removesuffix(" &").removesuffix(", coll.") for s in x] if isinstance(x, list) else [])
-    authors = ds["Auteurs_cleaned"].explode().sort_values().dropna()
-    authors_only_onechar_firstname = authors.apply(lambda s: re.sub(r"^(.*, \w)[^,]*$", r"\1", s.lower()))
-    # use value_counts() to see list of unique authors
-    return ds
+def load_acm_feather(fname='Data/ACM/AcmEPFL_paired.feather'):
+    df: pd.DataFrame = pd.read_feather(fname)
+    df = df[df["is_jury"]==True].reset_index(drop=True)
+    df["Auteurs"] = df["Auteurs"].str.split(";")
+    df["Auteurs_cleaned"] = df["Auteurs"].apply(lambda x: [s.removesuffix(" +").removesuffix(" &").removesuffix(", coll.") for s in x] if isinstance(x, list) else [])
+    
+    # authors = df["Auteurs_cleaned"].explode().sort_values().dropna()
+    # authors_only_onechar_firstname = authors.apply(lambda s: re.sub(r"^(.*, \w)[^,]*$", r"\1", s.lower()))
+    # # use value_counts() to see list of unique authors
 
-def create_list(ds: pd.DataFrame):
+    return df
+
+def create_list(df: pd.DataFrame):
     projects = set()
-    for id, project in ds.iterrows():
+    for id, project in df.iterrows():
         authors = map(lambda s: re.sub(r"^(.*, \w)[^,]*$", r"\1", s.lower()), project["Auteurs_cleaned"])
         year = project["Date de début de l'objet"]
         year = year.year if isinstance(year, pd.Timestamp) else 2020
@@ -47,8 +49,8 @@ def create_network(projects: list[Project]):
     return g
 
 def main():
-    ds = load_feather()
-    l = create_list(ds)
+    df = load_acm_feather()
+    l = create_list(df)
     g = create_network(l)
     nx.write_gexf(g, "graph.gexf")
 

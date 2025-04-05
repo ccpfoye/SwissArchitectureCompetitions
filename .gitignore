@@ -1,2 +1,4 @@
 Data/*/*.csv
 # Data/*/*.feather
+*.xml
+*.gexf
