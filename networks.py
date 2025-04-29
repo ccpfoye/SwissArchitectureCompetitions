@@ -17,6 +17,10 @@ class Project(NamedTuple):
     year: int
     authors_to_role: frozendict[str, str]
 
+class Author(NamedTuple):
+    name_abr: str
+    projects: frozenset[Project]
+
 def load_feather(fname='Data/ACM/AcmEPFL_paired.feather'):
     ds: pd.DataFrame = pd.read_feather(fname)
     ds = ds[ds["is_jury"]==True].reset_index(drop=True)
@@ -28,10 +32,11 @@ def load_feather(fname='Data/ACM/AcmEPFL_paired.feather'):
     # use value_counts() to see list of unique authors
     return ds
 
-def create_list(ds: pd.DataFrame):
+def create_project_list(ds: pd.DataFrame) -> list[Project]:
     projects = set()
     for id, project in ds.iterrows():
-        authors = list(map(lambda s: re.sub(r"^(.*, \w)[^,]*$", r"\1", s.lower()), project["Auteurs_cleaned"]))
+        # authors = list(map(lambda s: re.sub(r"^(.*, \w)[^,]*$", r"\1", s.lower()), project["Auteurs_cleaned"])) # Only keep first letter of first name
+        authors = list(map(lambda s: s.lower(), project["Auteurs_cleaned"])) # Lowercase authors
         year = project["Date de début de l'objet"]
         year = year.year if isinstance(year, pd.Timestamp) else 2020
         roles = project["Rôle de l'auteur"]
@@ -43,14 +48,25 @@ def create_list(ds: pd.DataFrame):
         projects.add(Project(project["Nom de l'objet"], frozenset(authors), year, frozendict(authors_to_role)))
     return list(projects)
 
-def create_network(projects: list[Project]):
+def create_authors_list(projects: list[Project]) -> list[Author]:
+    authors_dict: dict[str, set[Project]] = {}
+    for project in projects:
+        for author in project.authors_abr:
+            if author not in authors_dict:
+                authors_dict[author] = set()
+            authors_dict[author].add(project)
+    authors: list[Author] = []
+    for author, projects in authors_dict.items():
+        authors.append(Author(author, frozenset(projects)))
+    return authors
+
+def create_network(projects: list[Project] = None):
+    if projects is None:
+        projects = create_project_list(load_feather())
     g = nx.Graph()
     for project in projects:
-        g.add_node(
-            project.name,
-            year=project.year, 
-            year_cat=project.year-(project.year%20),
-        )
+
+        g.add_node(project.name, year=project.year, year_cat=project.year-(project.year%20), authors=";".join(project.authors_abr))
     for i in tqdm.tqdm(range(len(projects))):
         #roles_i = projects[i].authors_to_role
         for j in range(i+1, len(projects)):
@@ -60,8 +76,8 @@ def create_network(projects: list[Project]):
             #if len(roles_i) != 0 and len(roles_j) != 0:
             #    common_authors = frozenset(filter(lambda author: "1" in roles_i[author] or "1" in roles_j[author], common_authors))
             weight = len(common_authors)
-            if weight > 0:
-                g.add_edge(projects[i].name, projects[j].name, weight=weight)
+            if weight > 1:
+                g.add_edge(projects[i].name, projects[j].name, weight=weight, authors=";".join(common_authors))
     return g
 
 def dynamic_graph(g: nx.Graph):
@@ -77,12 +93,42 @@ def dynamic_graph(g: nx.Graph):
     
     return g
 
-def main():
+def create_authors_network(authors: list[Author]):
+    g = nx.Graph()
+    for author in authors:
+        mean_year = 0
+        year_count = 0
+        for project in author.projects:
+            if project.year < 2000:
+                mean_year += project.year
+                year_count += 1
+        mean_year = (mean_year / year_count) if year_count else 2020
+
+        projects = ";".join(map(lambda project: project.name, author.projects))
+
+        g.add_node(author.name_abr, mean_year = mean_year, nb_projects = len(author.projects), projects=projects)
+    for i in tqdm.tqdm(range(len(authors))):
+        for j in range(i+1, len(authors)):
+            common_projects = authors[i].projects & authors[j].projects
+            weight = len(common_projects)
+            if weight > 0:
+                g.add_edge(authors[i].name_abr, authors[j].name_abr, weight=weight)
+    return g
+
+def authors_network():
     ds = load_feather()
-    l = create_list(ds)
+    projects_list = create_project_list(ds)
+    authors_list = create_authors_list(projects_list)
+    g = create_authors_network(authors_list)
+    nx.write_gexf(g, "acm_authors_graph.gexf")
+
+def project_network():
+    ds = load_feather()
+    l = create_project_list(ds)
     g = create_network(l)
     dynamic_g = dynamic_graph(g)
     nx.write_gexf(dynamic_g, "dynamic_graph.gexf")
 
 if __name__ == "__main__":
-    main()
+    project_network()
+    authors_network()
