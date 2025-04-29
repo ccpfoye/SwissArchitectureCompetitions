@@ -16,12 +16,13 @@ class Project(NamedTuple):
     authors_abr: frozenset[str]
     year: int
     authors_to_role: frozendict[str, str]
+    canton: str
 
 class Author(NamedTuple):
     name_abr: str
     projects: frozenset[Project]
 
-def load_feather(fname='Data/ACM/AcmEPFL_paired.feather'):
+def load_feather(fname='Data/ACM/AcmEPFL_paired_communes.feather'):
     ds: pd.DataFrame = pd.read_feather(fname)
     ds = ds[ds["is_jury"]==True].reset_index(drop=True)
     ds["Auteurs"] = ds["Auteurs"].str.split(";")
@@ -45,7 +46,7 @@ def create_project_list(ds: pd.DataFrame) -> list[Project]:
         if isinstance(roles, list) and len(authors) == len(roles):
             for i in range(len(authors)):
                 authors_to_role[authors[i]] = roles[i]
-        projects.add(Project(project["Nom de l'objet"], frozenset(authors), year, frozendict(authors_to_role)))
+        projects.add(Project(project["Nom de l'objet"], frozenset(authors), year, frozendict(authors_to_role), project["Canton"] or "Unknown"))
     return list(projects)
 
 def create_authors_list(projects: list[Project]) -> list[Author]:
@@ -66,7 +67,7 @@ def create_network(projects: list[Project] = None):
     g = nx.Graph()
     for project in projects:
 
-        g.add_node(project.name, year=project.year, year_cat=project.year-(project.year%20), authors=";".join(project.authors_abr))
+        g.add_node(project.name, year=project.year, year_cat=project.year-(project.year%20), authors=";".join(project.authors_abr), canton=project.canton)
     for i in tqdm.tqdm(range(len(projects))):
         #roles_i = projects[i].authors_to_role
         for j in range(i+1, len(projects)):
@@ -76,7 +77,7 @@ def create_network(projects: list[Project] = None):
             #if len(roles_i) != 0 and len(roles_j) != 0:
             #    common_authors = frozenset(filter(lambda author: "1" in roles_i[author] or "1" in roles_j[author], common_authors))
             weight = len(common_authors)
-            if weight > 1:
+            if weight > 0:
                 g.add_edge(projects[i].name, projects[j].name, weight=weight, authors=";".join(common_authors))
     return g
 
@@ -104,9 +105,14 @@ def create_authors_network(authors: list[Author]):
                 year_count += 1
         mean_year = (mean_year / year_count) if year_count else 2020
 
+        cantons = {}
+        for project in author.projects:
+            cantons[project.canton] = cantons.get(project.canton, 0) + 1
+        max_canton = max(cantons, key=cantons.get)
+
         projects = ";".join(map(lambda project: project.name, author.projects))
 
-        g.add_node(author.name_abr, mean_year = mean_year, nb_projects = len(author.projects), projects=projects)
+        g.add_node(author.name_abr, mean_year = mean_year, nb_projects = len(author.projects), projects=projects, max_canton=max_canton)
     for i in tqdm.tqdm(range(len(authors))):
         for j in range(i+1, len(authors)):
             common_projects = authors[i].projects & authors[j].projects
