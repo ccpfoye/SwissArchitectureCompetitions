@@ -46,7 +46,11 @@ def create_list(ds: pd.DataFrame):
 def create_network(projects: list[Project]):
     g = nx.Graph()
     for project in projects:
-        g.add_node(project.name, year=project.year, year_cat=project.year-(project.year%20))
+        g.add_node(
+            project.name,
+            year=project.year, 
+            year_cat=project.year-(project.year%20),
+        )
     for i in tqdm.tqdm(range(len(projects))):
         #roles_i = projects[i].authors_to_role
         for j in range(i+1, len(projects)):
@@ -60,11 +64,25 @@ def create_network(projects: list[Project]):
                 g.add_edge(projects[i].name, projects[j].name, weight=weight)
     return g
 
+def dynamic_graph(g: nx.Graph):
+    """Convert static graph to dynamic GEXF format with time intervals"""
+    for node, data in g.nodes(data=True):
+        start = int(data['year'])
+        data['start'] = start
+        data['end'] = start + 1
+    g = nx.Graph(g)
+    g.graph['mode'] = 'dynamic'
+    g.graph['defaultedgetype'] = 'undirected'
+    g.graph['timeformat'] = 'double'
+    
+    return g
+
 def main():
     ds = load_feather()
     l = create_list(ds)
     g = create_network(l)
-    nx.write_gexf(g, "graph.gexf")
+    dynamic_g = dynamic_graph(g)
+    nx.write_gexf(dynamic_g, "dynamic_graph.gexf")
 
 if __name__ == "__main__":
     main()
