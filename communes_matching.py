@@ -1,14 +1,8 @@
 import pandas as pd
 import json
 
-def load_feather(fname='Data/ACM/AcmEPFL_paired.feather'):
+def load_feather(fname='Data/ACM/AcmEPFL_paired_communes.feather'):
     ds: pd.DataFrame = pd.read_feather(fname)
-    ds = ds[ds["is_jury"]==True].reset_index(drop=True)
-    ds["Auteurs"] = ds["Auteurs"].str.split(";")
-    ds["Auteurs_cleaned"] = ds["Auteurs"].apply(lambda x: [s.removesuffix(" +").removesuffix(" &").removesuffix(", coll.") for s in x] if isinstance(x, list) else [])
-    # authors = ds["Auteurs_cleaned"].explode().sort_values().dropna()
-    # authors_only_onechar_firstname = authors.apply(lambda s: re.sub(r"^(.*, \w)[^,]*$", r"\1", s.lower()))
-    ds["Rôle de l'auteur"] = ds["Rôle de l'auteur"].str.split(";")
     # use value_counts() to see list of unique authors
     if "Commune" not in ds.columns:
         ds["Commune"] = None
