@@ -5,6 +5,7 @@ import numpy as np
 import re
 from typing import NamedTuple
 from frozendict import frozendict
+import json
 
 # 8172 mentionned authors
 # 4057 unique authors
@@ -94,7 +95,7 @@ def dynamic_graph(g: nx.Graph):
     
     return g
 
-def create_authors_network(authors: list[Author]):
+def create_authors_network(authors: list[Author], education_data: dict[str, list[str]] = None):
     g = nx.Graph()
     for author in authors:
         mean_year = 0
@@ -112,7 +113,9 @@ def create_authors_network(authors: list[Author]):
 
         projects = ";".join(map(lambda project: project.name, author.projects))
 
-        g.add_node(author.name_abr, mean_year = mean_year, nb_projects = len(author.projects), projects=projects, max_canton=max_canton)
+        education = education_data.get(author.name_abr, []) if education_data else []
+
+        g.add_node(author.name_abr, mean_year = mean_year, nb_projects = len(author.projects), projects=projects, max_canton=max_canton, education=";".join(education))
     for i in tqdm.tqdm(range(len(authors))):
         for j in range(i+1, len(authors)):
             common_projects = authors[i].projects & authors[j].projects
@@ -125,7 +128,14 @@ def authors_network():
     ds = load_feather()
     projects_list = create_project_list(ds)
     authors_list = create_authors_list(projects_list)
-    g = create_authors_network(authors_list)
+
+    # Lowercase keys to match internal author naming
+    with open("Data/architects/architects_to_school.json", "r", encoding="utf-8") as f:
+       education_data = json.load(f)
+    education_data = {k.lower(): v for k, v in education_data.items()}
+    print(education_data)
+
+    g = create_authors_network(authors_list, education_data)
     nx.write_gexf(g, "acm_authors_graph.gexf")
 
 def project_network():
