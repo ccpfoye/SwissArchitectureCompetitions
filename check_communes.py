@@ -1,4 +1,5 @@
 import pandas as pd
+import json
 
 def load_feather(fname='Data/ACM/AcmEPFL_paired_communes.feather'):
     ds: pd.DataFrame = pd.read_feather(fname)
@@ -24,15 +25,16 @@ def match_communes(concours_str, commune_list):
 df = load_feather()
 df_communes = load_communes()
 
+with open("Data\geo_data\canton_name_to_abbreviation.json") as f:
+    canton_dict = json.load(f)
+
 for i, concours in df.iterrows():
-    if concours["Commune"] in ["Mon", "Sur", "Loc", "Fey", "Ins", "Mund", "Lax", "Mase", "Agra", "Port", "Rain", "Font", "Alle", "Trans", "Bure", "Arch", "Rue", "Lens", "Maur", "Premier", "Gy", "L'Abbaye", "Aven", "Sent", "Le Pont", "Cham", "Le Vaud", "La Neuveville"]:
-        commune = match_communes(concours["Nom de l'objet"], df_communes)
-        if "autoroute" in concours["Nom de l'objet"]:
-            pass
-        elif commune:
-            df.at[i, "Commune"] = commune
-        else:
-            print(concours["Nom de l'objet"])
+    if concours["Canton"] == "SO":
+        commune = input(f"Commune: {concours["Nom de l'objet"]}:")
+        df.at[i, "Commune"] = commune
+        canton = input(f"Canton: {concours["Nom de l'objet"]}")
+        df.at[i, "Canton"] = canton
+
 
 print(df["Commune"])
 df.to_feather("Data/ACM/AcmEPFL_paired_communes.feather")
