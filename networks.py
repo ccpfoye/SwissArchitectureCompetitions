@@ -18,6 +18,7 @@ class Project(NamedTuple):
     year: int
     authors_to_role: frozendict[str, str]
     canton: str
+    domain: str
 
 class Author(NamedTuple):
     name_abr: str
@@ -34,7 +35,11 @@ def load_feather(fname='Data/ACM/AcmEPFL_paired_communes.feather'):
     # use value_counts() to see list of unique authors
     return ds
 
-def create_project_list(ds: pd.DataFrame) -> list[Project]:
+def load_projectToDomainCsv(fname="Data/ACM/competition_domain_review.csv"):
+    projectToDomain = pd.read_csv(fname).set_index("Competition Name", drop=True)
+    return projectToDomain
+
+def create_project_list(ds: pd.DataFrame, projectToDomain: pd.DataFrame = None) -> list[Project]:
     projects = set()
     for id, project in ds.iterrows():
         # authors = list(map(lambda s: re.sub(r"^(.*, \w)[^,]*$", r"\1", s.lower()), project["Auteurs_cleaned"])) # Only keep first letter of first name
@@ -47,7 +52,12 @@ def create_project_list(ds: pd.DataFrame) -> list[Project]:
         if isinstance(roles, list) and len(authors) == len(roles):
             for i in range(len(authors)):
                 authors_to_role[authors[i]] = roles[i]
-        projects.add(Project(project["Nom de l'objet"], frozenset(authors), year, frozendict(authors_to_role), project["Canton"] or "Unknown"))
+
+        domain = ""
+        if projectToDomain is not None:
+            domain = projectToDomain.loc[project["Nom de l'objet"]]["Assigned Domain"]
+
+        projects.add(Project(project["Nom de l'objet"], frozenset(authors), year, frozendict(authors_to_role), project["Canton"] or "Unknown", domain))
     return list(projects)
 
 def create_authors_list(projects: list[Project]) -> list[Author]:
