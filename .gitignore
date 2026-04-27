@@ -1,3 +1,10 @@
 Data/*/*.csv
 # Data/*/*.feather
 *.xml
+
+# Linked Binaries
+read_csv
+*.o
+
+
+
