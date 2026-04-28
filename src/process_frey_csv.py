@@ -77,16 +77,24 @@ frey_df = pd.read_csv(CSV_PATH)
 print("Dropping full duplicates")
 frey_df = frey_df.drop_duplicates()
 
+print("Dropping duplicates from names")
+frey_df = frey_df.drop_duplicates(['Nom de l\'objet'])
+
 # Match competitions to jugements
 print("Matching Jugements and Competitions")
 object_names = frey_df['Nom de l\'objet']
 
 ## Build normalized set of non-jugement names
 non_jugement_names_normalized = set()
-for name in object_names:
+normalized_name_to_row_idx = {}
+for row_idx, name in enumerate(object_names): 
     is_jug, _ = is_jugement(name)
     if not is_jug:
         non_jugement_names_normalized.add(normalize_name(name))
+    if normalize_name(name) in normalized_name_to_row_idx:
+        normalized_name_to_row_idx[normalize_name(name)].append(row_idx)
+    else:
+        normalized_name_to_row_idx[normalize_name(name)] = [row_idx]
 
 # to keep track of problems with unpaired jugements/competitions
 judgements_missing_listings = 0
@@ -108,24 +116,45 @@ for i, name in enumerate(object_names):
     
     # Levenshtein distance
     nearest_levenshtein_name, num_matches, min_distance = nearest_levenshtein_distance(normalize_name(competition_listing_name), non_jugement_names_normalized)
+
     levenshtein_match = None
     if min_distance <= 2:
         levenshtein_match = nearest_levenshtein_name
 
     if not exact_match and not normalized_match and not levenshtein_match:
         judgements_missing_listings += 1
+        
+        listing_idx = normalized_name_to_row_idx[normalize_name(name)]
 
         print("---")
-        print(f"WARNING: \"{name}\" with listing name \"{competition_listing_name}\" doesn't have a corresponding listing.")
+        print(f"WARNING: \"{name}\" doesn't have a corresponding listing.")
         print(f"Normalized name: \"{normalize_name(competition_listing_name)}\"")
+        print(f"Listing Idx: {listing_idx}")
+        if len(listing_idx) == 1:
+            listing_year = frey_df.iloc[listing_idx[0]]['Date de début de l\'objet']
+            print(f"listing has year {listing_year}")
         print(f"Min Lev distance: {min_distance}")
 
         if num_matches > 1:
             print(f"NOTE: Found {len(nearest_levenshtein_name)} matches")
             for near_name in nearest_levenshtein_name:
-                print(f"Tied normalized non-jugement name: \"{near_name}\"")
+                near_name_idx = normalized_name_to_row_idx[near_name]
+                for idx in near_name_idx:
+                    listing = frey_df.iloc[idx]
+                    listing_year = listing['Date de début de l\'objet']
+                    listing_name = listing['Nom de l\'objet']
+                    print(f"Tied non-jugement name: \"{listing_name}\"")
+                    print(f"\tListing has year: {listing_year}")
+
         else:
+            near_name_idx = normalized_name_to_row_idx[nearest_levenshtein_name]
             print(f"Nearest normalized non-jugement name: \"{nearest_levenshtein_name}\"")
+            for idx in near_name_idx:
+                listing = frey_df.iloc[idx]
+                listing_year = listing['Date de début de l\'objet']
+                listing_name = listing['Nom de l\'objet']
+                print(f"\tNearest non-jugement name: \"{listing_name}\"")
+                print(f"\tListing has year: {listing_year}")
         print("Review:")
 
 # Warning Messages:
