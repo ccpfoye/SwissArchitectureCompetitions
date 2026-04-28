@@ -57,10 +57,19 @@ def nearest_levenshtein_distance(name, normalized_names_set):
         if current_distance < min_distance:
             min_distance = current_distance
             closest_name = normalized_name
-    return closest_name
+
+    num_matches = 0
+    matches = []
+    for normalized_name in normalized_names_set:
+        if le.distance(name, normalized_name) == min_distance:
+            num_matches += 1
+            matches.append(normalized_name)
+
+    if num_matches > 1:
+        return matches, num_matches, min_distance
+
+    return closest_name, num_matches, min_distance
         
-
-
 ## Main Script
 frey_df = pd.read_csv(CSV_PATH)
 
@@ -96,17 +105,31 @@ for i, name in enumerate(object_names):
 
     ## Normalized matches
     normalized_match = normalize_name(competition_listing_name) in non_jugement_names_normalized
+    
+    # Levenshtein distance
+    nearest_levenshtein_name, num_matches, min_distance = nearest_levenshtein_distance(normalize_name(competition_listing_name), non_jugement_names_normalized)
+    levenshtein_match = None
+    if min_distance <= 2:
+        levenshtein_match = nearest_levenshtein_name
 
-    if not exact_match and not normalized_match:
+    if not exact_match and not normalized_match and not levenshtein_match:
         judgements_missing_listings += 1
-        nearest_levenshtein_name = nearest_levenshtein_distance(normalize_name(competition_listing_name), non_jugement_names_normalized)
+
         print("---")
         print(f"WARNING: \"{name}\" with listing name \"{competition_listing_name}\" doesn't have a corresponding listing.")
         print(f"Normalized name: \"{normalize_name(competition_listing_name)}\"")
-        print(f"Nearest normalized non-jugement name: \"{nearest_levenshtein_name}\"")
+        print(f"Min Lev distance: {min_distance}")
+
+        if num_matches > 1:
+            print(f"NOTE: Found {len(nearest_levenshtein_name)} matches")
+            for near_name in nearest_levenshtein_name:
+                print(f"Tied normalized non-jugement name: \"{near_name}\"")
+        else:
+            print(f"Nearest normalized non-jugement name: \"{nearest_levenshtein_name}\"")
         print("Review:")
 
 # Warning Messages:
+print("---")
 print(f"WARNING: {judgements_missing_listings} judgements are missing a corresponding competition listing.")
 
     
