@@ -11,7 +11,7 @@ MAX_INT = 999999999 # not that big, but enough for levenshtein
 DEGREE_PATTERNS = [ 
     r'\(\s*(?:1er|2e|2ème|deuxième|premier|première)\s+degr[ée][ée]?\s*\)',
     r'\(\s*(?:1er|2e|2ème|deuxième|premier)\s+(?:tour|concours|épreuve)\s*\)',
-    r',\s*(?:seconde|deuxième|première|2e|2ème|1er)\s+(?:degr[ée][ée]?|épreuve|tour)',
+    r',\s*(?:seconde|deuxième|première|premier|2e|2ème|1er)\s+(?:degr[ée][ée]?|épreuve|tour)',
     r',?\s*2e\s+dgré',
     r'\(\s*r[ée]examen\s*\)',
     r'\(\s*remani[ée]s\s*\)',
@@ -45,8 +45,8 @@ def _strip_listing_suffixes(name):
     return name.strip()
 
 def normalize_name(name):
-    n = _strip_listing_suffixes(name)
-    n = _strip_degree(n)
+    n = _strip_degree(name)
+    n = _strip_listing_suffixes(n)
     return n.lower().strip()
 
 def nearest_levenshtein_distance(name, normalized_names_set):
@@ -156,6 +156,14 @@ for i, name in enumerate(object_names):
                 print(f"\tNearest non-jugement name: \"{listing_name}\"")
                 print(f"\tListing has year: {listing_year}")
         print("Review:")
+
+# Manually Assign the following Jugements
+# 
+# - Concours pour le plan d'avenir de la ville de Sion, jugement -> Concours d'idées pour le plan d'avenir de la Ville de Sion
+# - Concours restreint pour un nouvel Hôtel de la Banque nationale à Zürich, jugement 
+#   -> Concours pour un nouvel Hôtel de la Banque nationale à Zürich-366
+#   -> Concours pour un nouvel Hôtel de la Banque nationale à Zürich-367
+# - Concours pour l'édifice destiné au B.I.T. (Bureau Internationasl du Travail), à Genève, jugement -> Concours Bureau International du Travail, Genève
 
 # Warning Messages:
 print("---")
