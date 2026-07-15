@@ -50,8 +50,7 @@ function table_ternary ( table_check , F )
     if table_check then return table_check else return F end
 end
 
-Competitions = {}
-local competition_objects = {}
+local Competitions = {}
 
 local competition_data = csv.open("../Data/competitions.csv", {header=true})
 
@@ -70,6 +69,7 @@ for fields in competition_data:lines() do
 		    return actor_name
 		end
 	    end)
+	    print(new_names)	    
 
 	    new_competition_object[i] = new_names
 	else
@@ -78,11 +78,12 @@ for fields in competition_data:lines() do
 
     end
 
-    competition_objects[new_competition_object["competition_id"]] =  new_competition_object
+    Competitions[new_competition_object["competition_id"]] =  new_competition_object
 end
 
 
-Competitions.competitions = competition_objects
+return Competitions
+
 
 
 
