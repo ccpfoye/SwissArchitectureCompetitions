@@ -63,23 +63,20 @@ for fields in competition_data:lines() do
     for i,v in pairs(fields) do
 
 	if name_fields[i] then
-	    print("FOUND NAME FIELD")
-	    local new_names = {}
 
-	    for name in string.gmatch(v, "[^;]+") do
-		table.insert(new_names, table_ternary(actor_lookup:lookup_actor_name(name), name))
-	    end
+	    local new_names = string.gsub(v, "[^;]+", function(name)
+		local actor_name = actor_lookup:lookup_actor_name(name)
+		if actor_name and actor_name ~= '' then
+		    return actor_name
+		end
+	    end)
 
 	    new_competition_object[i] = new_names
-
 	else
 	    new_competition_object[i] = v
 	end
 
     end
-
-    for i,v in pairs(new_competition_object) do print(i,v) end
-    print("\n")
 
     competition_objects[new_competition_object["competition_id"]] =  new_competition_object
 end

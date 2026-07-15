@@ -35,7 +35,7 @@ ActorLookup["actor_name_table"] = actor_name_objs
 -- ActorLookup actor lookup!
 function ActorLookup:lookup_actor_name(actor_name_raw)
     if self.actor_name_table[actor_name_raw] then
-	return self.actor_name_table[actor_name_raw].actor_name
+	return self.actor_name_table[actor_name_raw].actor_slug
     else return nil end
 end
 
