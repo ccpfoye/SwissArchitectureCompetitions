@@ -69,7 +69,6 @@ for fields in competition_data:lines() do
 		    return actor_name
 		end
 	    end)
-	    print(new_names)	    
 
 	    new_competition_object[i] = new_names
 	else
