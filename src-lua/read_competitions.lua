@@ -45,11 +45,6 @@ local actor_lookup = require "actor_name_lookup"
 --
 -- is_isolate		In a network of shared artists, is this isolated?
 
--- https://stackoverflow.com/questions/5525817/inline-conditions-in-lua-a-b-yes-no
-function table_ternary ( table_check , F )
-    if table_check then return table_check else return F end
-end
-
 local Competitions = {}
 
 local competition_data = csv.open("../Data/competitions.csv", {header=true})
