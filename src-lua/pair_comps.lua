@@ -39,7 +39,7 @@ for comp_id, comp_metadata in pairs(comps) do
     for comp_id_j, comp_metadata_j in pairs(comps) do
 	-- no self-edges
 	if comp_id == comp_id_j then
-	    break
+	    goto inner_continue
 	end
 
 	local shared_listing_names = {}
@@ -98,6 +98,8 @@ for comp_id, comp_metadata in pairs(comps) do
 	end
 
 	comp_pairs[comp_id] = {listing_pairs = listing_comp_pairs, jugement_pairs = jugement_comp_pairs}
+
+	::inner_continue::
     end
     ::continue::
 end
