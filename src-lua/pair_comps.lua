@@ -1,6 +1,6 @@
-comps = require "read_competitions"
+local comps = require "read_competitions"
 
-comp_pairs = {}
+local comp_pairs = {}
 
 -- Source - https://stackoverflow.com/a/7615129
 -- Posted by user973713, modified by community. See post 'Timeline' for change history
@@ -103,4 +103,6 @@ for comp_id, comp_metadata in pairs(comps) do
     end
     ::continue::
 end
+
+return comp_pairs
 
