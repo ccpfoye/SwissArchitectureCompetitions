@@ -25,6 +25,7 @@ for fields in actor_names:lines() do
     for i, v in pairs(fields) do
 	new_actor_name_object[i] = v
     end
+    print("\n")
     actor_name_objs[new_actor_name_object["author_raw"]] = new_actor_name_object
 end
 

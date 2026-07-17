@@ -49,6 +49,8 @@ function Graph:compute_degrees(do_weighted)
 	local node_degree = 0
 	local edge_list = node_edge_lists[self.edge_list_key]
 
+	if not edge_list then goto skip_compute end
+
 	for out_node, edge_labels in pairs(edge_list) do
 	    if do_weighted then
 		node_degree = node_degree + #edge_labels
@@ -56,6 +58,8 @@ function Graph:compute_degrees(do_weighted)
 		node_degree = node_degree + 1
 	    end
 	end
+
+	::skip_compute::
 	self.degrees[node] = node_degree
     end
 	 
